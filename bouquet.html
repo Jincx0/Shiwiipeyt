@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Shiwiipeyt</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #fde2e4;
+}
+canvas { display: block; }
+#btn {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 30px;
+  font-size: 18px;
+  border: none;
+  border-radius: 30px;
+  background: #e63946;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(230,57,70,0.5);
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="c"></canvas>
+<button id="btn">Reveal Message 💌</button>
+
+<audio id="music" loop>
+  <source src="https://cdn.pixabay.com/audio/2022/10/20/audio_3a7b3d92a1.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const c = document.getElementById("c"), ctx = c.getContext("2d");
+const btn = document.getElementById("btn");
+const music = document.getElementById("music");
+
+function resize() { c.width = innerWidth; c.height = innerHeight; }
+resize(); addEventListener("resize", resize);
+
+const cx = c.width / 2, baseY = c.height * 0.82;
+let showMsg = false, fireworks = [], hearts = [], petals = [];
+
+// 🌅 Background
+function bg() {
+  const g = ctx.createLinearGradient(0,0,0,c.height);
+  g.addColorStop(0,"#ffb3c6");
+  g.addColorStop(1,"#fde2e4");
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,c.width,c.height);
+}
+
+// 💖 Hearts
+for(let i=0;i<30;i++)
+  hearts.push({x:Math.random()*c.width, y:c.height+Math.random()*300, s:6+Math.random()*6, sp:.4+Math.random()*.4});
+function drawHearts(){
+  ctx.fillStyle="#e63946";
+  hearts.forEach(h=>{
+    ctx.save();
+    ctx.translate(h.x,h.y);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.bezierCurveTo(-h.s,-h.s/2,-h.s,h.s/2,0,h.s);
+    ctx.bezierCurveTo(h.s,h.s/2,h.s,-h.s/2,0,0);
+    ctx.fill();
+    ctx.restore();
+    h.y -= h.sp;
+    h.x += Math.sin(h.y/60)*0.4;
+    if(h.y<-50){h.y=c.height+100; h.x=Math.random()*c.width;}
+  });
+}
+
+// 🌸 Falling petals
+for(let i=0;i<50;i++)
+  petals.push({x:Math.random()*c.width,y:Math.random()*c.height,s:6+Math.random()*6,sp:.5+Math.random()*.6,r:Math.random()*Math.PI});
+function drawPetals(){
+  ctx.fillStyle="#ffccd5";
+  petals.forEach(p=>{
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(p.r);
+    ctx.beginPath();
+    ctx.ellipse(0,0,p.s,p.s/2,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+    p.y += p.sp;
+    p.x += Math.sin(p.y/50)*0.4;
+    if(p.y>c.height){p.y=-20;p.x=Math.random()*c.width;}
+  });
+}
+
+// 🌹 10 Roses
+const roseColors = ["#e63946","#ff758f","#f1a7c5","#ffd6a5"];
+const roses = [];
+for(let i=0;i<10;i++)
+  roses.push({x:(i-4.5)*40, y: Math.floor(i/5)*-25, c:roseColors[i%roseColors.length]});
+
+// 🌹 Realistic rose
+function drawRose(x,y,t,col){
+  const sway = Math.sin(t/1400+x*0.01)*5;
+  ctx.save();
+  ctx.translate(x+sway,y);
+  ctx.fillStyle = col;
+  ctx.shadowColor = col;
+  ctx.shadowBlur = 12;
+  for(let i=0;i<18;i++){
+    ctx.beginPath();
+    ctx.rotate(Math.PI/8);
+    ctx.ellipse(0,-15,12,22,0,0,Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// 🌿 Stem
+function stem(x,y,t){
+  const sway = Math.sin(t/1400+x*0.01)*7;
+  ctx.strokeStyle="#588157";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.moveTo(x+sway,y);
+  ctx.quadraticCurveTo(cx+sway*.3, baseY-120, cx, baseY);
+  ctx.stroke();
+}
+
+// 💐 Bouquet base
+function base(){
+  ctx.fillStyle="#a7c957";
+  ctx.beginPath();
+  ctx.moveTo(cx-90,baseY);
+  ctx.lineTo(cx,baseY+80);
+  ctx.lineTo(cx+90,baseY);
+  ctx.fill();
+  ctx.fillStyle="#6a994e";
+  ctx.fillRect(cx-45,baseY-12,90,24);
+}
+
+// 🎆 Fireworks
+function launch(){
+  const col=["#ffd166","#ff758f","#cdb4db","#a2d2ff"];
+  fireworks.push({x:Math.random()*c.width, y:Math.random()*c.height*0.4, r:0, c:col[Math.floor(Math.random()*col.length)]});
+}
+function drawFW(){
+  fireworks.forEach((f,i)=>{
+    ctx.strokeStyle=f.c;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+    ctx.stroke();
+    f.r+=4;
+    if(f.r>110) fireworks.splice(i,1);
+  });
+}
+
+// 💌 Text
+function text(){
+  ctx.textAlign="center";
+  ctx.fillStyle="#d62828";
+  ctx.font="bold 32px Arial";
+  ctx.fillText("",cx,baseY-390);
+  if(showMsg){
+    ctx.fillStyle="white";
+    ctx.shadowColor="#e63946";
+    ctx.shadowBlur=25;
+    ctx.font="bold 40px Arial";
+    ctx.fillText("Hapiii Balentaynss Dayy Shiwiipeyt!!! 💖💖💖",cx,baseY-430);
+    ctx.shadowBlur=0;
+  }
+}
+
+// 🌟 Animate
+let start=Date.now();
+function animate(){
+  const t = Date.now()-start;
+  bg();
+  roses.forEach(r=>{
+    drawRose(cx+r.x,baseY-330+r.y,t,r.c);
+    stem(cx+r.x,baseY-310+r.y,t);
+  });
+  base();
+  drawHearts();
+  text();
+  drawFW();
+  drawPetals();
+  requestAnimationFrame(animate);
+}
+animate();
+
+// 💖 Button
+btn.onclick = ()=>{
+  showMsg=true;
+  btn.style.display="none";
+  music.volume=.5;
+  music.play();
+  let f=setInterval(launch,280);
+  setTimeout(()=>clearInterval(f),7000);
+};
+</script>
+</body>
+</html>
